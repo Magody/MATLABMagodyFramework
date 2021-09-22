@@ -17,24 +17,31 @@ classdef QNeuralNetwork < QLearning
         shape_output;
         
         nnConfig;
-        qLearningConfig;
-        
-        % epsilon decay
-        epsilon;
         
         % alpha decay
         alpha;
         
         % aux
         use_convolutional;
+        actions_length;
     end
     methods
         
         function self = QNeuralNetwork(sequential_conv_network, sequential_network, nnConfig, qLearningConfig, functionExecuteEpisode)
             
-            self = self@QLearning(qLearningConfig.gameReplayStrategy, qLearningConfig.experience_replay_reserved_space, functionExecuteEpisode);
-            self.actions = 1:self.q_neural_network.network{end}.shape_output;  
-            self.actions_length = length(self.actions);
+            self = self@QLearning(qLearningConfig, functionExecuteEpisode);
+            
+            self.use_convolutional = ~isempty(sequential_conv_network.network);
+    
+            if self.use_convolutional
+                self.shape_input = sequential_conv_network.network{1}.shape_input;
+            else
+                self.shape_input = sequential_network.network{1}.shape_input;
+            end
+            
+            self.shape_output = sequential_network.network{end}.shape_output;
+             
+            self.actions_length = self.shape_output;
             self.initGameReplay(self.actions_length);
             
             self.sequential_conv_network = sequential_conv_network;
@@ -50,15 +57,7 @@ classdef QNeuralNetwork < QLearning
             self.epsilon = self.qLearningConfig.initial_epsilon;
             self.alpha = self.nnConfig.learning_rate;
             
-            self.use_convolutional = ~isempty(conv_network);
-    
-            if self.use_convolutional
-                self.shape_input = sequential_conv_network.network{1}.shape_input;
-            else
-                self.shape_input = sequential_network.network{1}.shape_input;
-            end
             
-            self.shape_output = sequential_network.network{end}.shape_output;
         end
         
         function updateQNeuralNetworkTarget(self)
@@ -121,7 +120,7 @@ classdef QNeuralNetwork < QLearning
             end
             
             % epsilon decay
-            self.epsilon = getEpsilonDecay(1, episode);
+            self.updateEpsilonDecay(1, episode);
 
             % alpha decay
             self.alpha = self.nnConfig.learning_rate/(1 + self.nnConfig.decay_rate_alpha * episode);
@@ -149,7 +148,7 @@ classdef QNeuralNetwork < QLearning
         function [max_q, action_index] = selectAction(self, state, is_test)
             
             Qval = self.forwardFull(state)'; 
-            [max_q, action_index] = QLearning.selectActionQEpsilonGreedy(Qval, self.epsilon, self.network{end}.shape_output, is_test);
+            [max_q, action_index] = QLearning.selectActionQEpsilonGreedy(Qval, self.epsilon, self.shape_output, is_test);
             
         end
         
@@ -186,12 +185,12 @@ classdef QNeuralNetwork < QLearning
 
                 % Getting the value of Q(s, a)
                 s = valid_replay{randIdx(numExample)}.state;
-                s_Qval = self.forwardFull(s);
+                s_Qval = self.forwardFull(s');
                 
                 % Getting the value of max_a_Q(s',a')
                 s_prime = valid_replay{randIdx(numExample)}.new_state;
                 
-                features = self.sequential_conv_network.forward(s_prime);
+                features = self.sequential_conv_network.forward(s_prime');
                 s_prime_Qval = self.sequential_network.forward(features);
                 maxQval_er = max(s_prime_Qval);
                 

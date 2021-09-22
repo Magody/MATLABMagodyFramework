@@ -3,6 +3,7 @@ clear all;
 clc;
 close all;
 
+seed_rng = 44;
 %% Libs
 path_to_framework = "/home/magody/programming/MATLAB/deep_learning_from_scratch/magody_framework";
 path_to_mnist_cloth_dataset = "/home/magody/programming/MATLAB/deep_learning_from_scratch/examples/dataset";
@@ -11,7 +12,6 @@ dir_base_models_result = "/home/magody/programming/MATLAB/deep_learning_from_scr
 addpath(genpath(path_to_framework));
 addpath(genpath(path_to_mnist_cloth_dataset));
 
-seed_rng = 44;
 
 %% Load data
 

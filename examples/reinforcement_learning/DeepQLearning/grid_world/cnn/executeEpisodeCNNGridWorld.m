@@ -1,4 +1,4 @@
-function history_episode = executeEpisodeCNNGridWorld(gqnn, episode, total_episodes, is_test, functionGetReward, context, verbose_level) %#ok<INUSD>
+function history_episode = executeEpisodeCNNGridWorld(q_neural_network, episode, is_test, functionGetReward, context, verbose_level) %#ok<INUSD>
                          
     history_episode = containers.Map();
     
@@ -15,7 +15,7 @@ function history_episode = executeEpisodeCNNGridWorld(gqnn, episode, total_episo
 
     while run_episode
 
-        [Qval, action] = gqnn.q_neural_network.selectAction(state, is_test);
+        [~, action] = q_neural_network.selectAction(state, is_test);
 
         
         % context is modified by reference
@@ -23,23 +23,18 @@ function history_episode = executeEpisodeCNNGridWorld(gqnn, episode, total_episo
 
 
         if ~is_test
-            gqnn.saveExperienceReplay(state, action, reward, new_state, finish);  
+            q_neural_network.saveExperienceReplay(state, action, reward, new_state, finish);  
             
-            history_learning = gqnn.learnFromExperienceReplay(episode, total_episodes, verbose_level);
+            history_learning = q_neural_network.learnFromExperienceReplay(episode, verbose_level);
             if history_learning('learned')
                 update_counter = update_counter + 1;
                 update_costs(1, update_counter) = history_learning('mean_cost'); %#ok<AGROW>
             end
+
         end
 
         step = step + 1;
         
-        if step > 30
-            % run_episode = false;
-        end
-        if mod(step, 5) == 0
-            % .updateQNeuralNetworkTarget(); 
-        end
         %{
         
         %}
@@ -50,6 +45,12 @@ function history_episode = executeEpisodeCNNGridWorld(gqnn, episode, total_episo
             run_episode = false;
         end
     end
+    if ~is_test
+        
+        % QNN target strategy, for "stable" learning
+        q_neural_network.updateQNeuralNetworkTarget();
+    end
+    
     history_episode('reward_cummulated') = reward_cummulated;
     history_episode('update_costs') = update_costs;
     

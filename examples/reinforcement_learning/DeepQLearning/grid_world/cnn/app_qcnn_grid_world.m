@@ -2,12 +2,14 @@
 clc;
 clear all; %#ok<CLALL>
 close all;
+seed_rng = 44;
 
 %% Libs
 path_to_framework = "/home/magody/programming/MATLAB/deep_learning_from_scratch/magody_framework";
 addpath(genpath(path_to_framework));
 
 %% Init general parameters
+generate_rng(seed_rng)
 verbose_level = 10;
 
 matrix_mask = [
@@ -45,53 +47,51 @@ context = containers.Map( ...
     
 %% Init Q neural network and its hyper parameters
 
-generate_rng(44);
-episodes_train = 100;
-episodes_test = 1;
+generate_rng(seed_rng)
+total_episodes = 100;
 epochs = 1; % epochs inside each NN
 learning_rate = 0.001;
 batch_size = 32;
 gamma = 0.99;
-epsilon = 0.5;
-experience_replay_reserved_space = 50;
+epsilon = 1;
+decay_rate_alpha = 0.01;
+experience_replay_reserved_space = 30;
 gameReplayStrategy = 1;
 loss_type = "mse";
 
 % Pooling("mean"), ...
 sequential_conv_network = Sequential({
-    Convolutional(2, 3, 0, 1, shape_input), ...
+    Convolutional([2, 2], 3, 0, 1, shape_input), ...
     Activation("tanh"), ....
     Reshape(), ...
 });
 
-conv_network = sequential_conv_network.network;
-
 input_dense = sequential_conv_network.shape_output;
 
-sequential = Sequential({
+sequential_network = Sequential({
     Dense(16, input_dense), ...
     Activation("relu"), ...
     Dense(16), ...
     Activation("relu"), ...
     Dense(4), ...
 });
-network = sequential.network;
 
 nnConfig = NNConfig(epochs, learning_rate, batch_size, loss_type);
-nnConfig.decay_rate_alpha = 0.01;
+nnConfig.decay_rate_alpha = decay_rate_alpha;
 
-qnnConfig = QNNConfig(gamma, epsilon);
+qLearningConfig = QLearningConfig(gamma, epsilon, gameReplayStrategy, experience_replay_reserved_space, total_episodes);
     
-q_neural_network = QNeuralNetwork(conv_network, network, nnConfig, qnnConfig);    
+q_neural_network = QNeuralNetwork(sequential_conv_network, sequential_network, nnConfig, qLearningConfig, @executeEpisodeCNNGridWorld);    
 
-gqnn = GQNN(q_neural_network, state_length, gameReplayStrategy, ...
-            experience_replay_reserved_space, @executeEpisodeCNNGridWorld);
 
 %% Train
 t_begin = tic;
-history_episodes_train = gqnn.runEpisodes(episodes_train, @getRewardCNNGridWorld, false, context, verbose_level-1);
+history_episodes_train = q_neural_network.runEpisodes(@getRewardCNNGridWorld, false, context, verbose_level-1);
 t_end = toc(t_begin);
 fprintf("Elapsed time: %.4f [minutes]\n", t_end/60);
+
+mean_reward_train = mean(history_episodes_train('rewards'));
+fprintf("Mean reward train: %.4f\n", mean_reward_train);
 
 figure(1);
 subplot(1,2,1)
@@ -109,7 +109,7 @@ plot(linear_update_costs);
 
 %% Test
 
-history_episodes_test = gqnn.runEpisodes(episodes_test, @getRewardCNNGridWorld, true, context, verbose_level-1);
+history_episodes_test = q_neural_network.runEpisodes(@getRewardCNNGridWorld, true, context, verbose_level-1);
 mean_reward = mean(history_episodes_test('rewards'));
 fprintf("Mean reward: %.4f\n", mean_reward);
 

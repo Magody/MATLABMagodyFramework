@@ -22,10 +22,6 @@ function history_episodes = customRunEpisodesBestPath(qLearning, functionGetRewa
         
         Q_table(state, action) = update;
         
-        
-        if action == 8  && state == 3
-           disp(""); 
-        end
             
         history_q_val(1, episode) = history_episode('max_q');
         history_scores(1, episode) = history_episode('score');

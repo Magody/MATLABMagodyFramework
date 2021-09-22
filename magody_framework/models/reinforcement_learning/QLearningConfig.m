@@ -8,7 +8,7 @@ classdef QLearningConfig < handle
         
         
         total_episodes;
-        
+        total_episodes_test = 1;
         gamma = 1;
         initial_epsilon;
         

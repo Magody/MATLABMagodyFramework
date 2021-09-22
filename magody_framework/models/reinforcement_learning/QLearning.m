@@ -55,17 +55,24 @@ classdef QLearning < handle
         
         function history_episodes = runEpisodesDefault(self, functionGetReward, is_test, context, verbose_level)
             
+            total_episodes = self.qLearningConfig.total_episodes;
+            if is_test
+                total_episodes = self.qLearningConfig.total_episodes_test;
+            end
+            
             
             history_episodes = containers.Map();
-            history_rewards = zeros([1, self.qLearningConfig.total_episodes]);
+            history_rewards = zeros([1, total_episodes]);
             
-            history_update_costs = cell([1, self.qLearningConfig.total_episodes]);
+            history_update_costs = cell([1, total_episodes]);
             
+            
+                
            
             for episode=1:total_episodes
 
-                if (mod(episode, 10) == 0 || episode == 1 || episode == self.qLearningConfig.total_episodes)  && verbose_level >= 1
-                    fprintf("Episode %d of %d, is test: %d\n", episode, self.qLearningConfig.total_episodes, is_test);
+                if (mod(episode, 10) == 0 || episode == 1 || episode == total_episodes)  && verbose_level >= 1
+                    fprintf("Episode %d of %d, is test: %d\n", episode, total_episodes, is_test);
                 end                
                 
                 history_episode = self.functionExecuteEpisode(self, episode, is_test, functionGetReward, context, verbose_level-1);
@@ -74,11 +81,9 @@ classdef QLearning < handle
                 
                 update_costs = history_episode('update_costs');
                 history_update_costs{1, episode} = update_costs(:);
+                
+                % update theta freeze if is Deep Q Learning
 
-                if ~is_test
-                    % QNN target strategy, for "stable" learning
-                    % self.updateQNeuralNetworkTarget();
-                end
             end
             history_episodes('rewards') = history_rewards;
             history_episodes('update_costs') = history_update_costs;
@@ -92,12 +97,12 @@ classdef QLearning < handle
             self.gameReplayCounter = self.gameReplayCounter + 1;
             if self.qLearningConfig.gameReplayStrategy == 1
                 self.index_action(action) = self.index_action(action) + 1;
-                index_experience_replay = mod(self.index_action(action), self.experience_replay_reserved_space);
+                index_experience_replay = mod(self.index_action(action), self.qLearningConfig.experience_replay_reserved_space);
                 if index_experience_replay == 0
-                    index_experience_replay = self.experience_replay_reserved_space;
+                    index_experience_replay = self.qLearningConfig.experience_replay_reserved_space;
                 end
 
-                offset = (action-1) * self.experience_replay_reserved_space;
+                offset = (action-1) * self.qLearningConfig.experience_replay_reserved_space;
                 index_replay = offset+index_experience_replay;
                 
             else
@@ -114,7 +119,7 @@ classdef QLearning < handle
         function updateEpsilonDecay(self, mode, episode)
             % mode=1 -> interpolate between initial_epsilon and 0.01
             if mode == 1
-                self.epsilon =  max(0.01, self.qLearningConfig.initial_epsilon * log(exp(1) - ((exp(1) - 1) * (episode/self.qLearningConfig.total_episodes))));
+                self.epsilon = max(0.01, self.qLearningConfig.initial_epsilon * log(exp(1) - ((exp(1) - 1) * (episode/self.qLearningConfig.total_episodes))));
             end
         end
         

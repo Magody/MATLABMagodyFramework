@@ -3,6 +3,7 @@ clear all;
 clc;
 close all;
 
+seed_rng = 44;
 %% Libs
 path_to_framework = "/home/magody/programming/MATLAB/deep_learning_from_scratch/magody_framework";
 addpath(genpath(path_to_framework));
@@ -16,7 +17,7 @@ len_data = size(Y, 1);
 
 %% Init parameters
 
-
+generate_rng(seed_rng);
 epochs = 200;
 learning_rate = 0.01;
 batch_size = 2;

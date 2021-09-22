@@ -2,14 +2,15 @@
 clc;
 clear all; %#ok<CLALL>
 close all;
+seed_rng = 44;
 
 %% Libs
 path_to_framework = "/home/magody/programming/MATLAB/deep_learning_from_scratch/magody_framework";
 addpath(genpath(path_to_framework));
 
 %% load data
-generate_rng(44); 
 %#ok<*NBRAK>
+generate_rng(seed_rng); 
 
 environment_graph_literal = [ ...
     [0, 1]; ... 
@@ -42,13 +43,13 @@ for i=1:edges
     end
     
     if from == goal
-        reward_matrix(to, from) = 5;
+        reward_matrix(to, from) = 10;
     else
         reward_matrix(to, from) = 0;
     end
 end
 
-reward_matrix(goal, goal) = 5;
+reward_matrix(goal, goal) = 10;
 
 disp(reward_matrix);
 % check graph is correct representation of environment
@@ -59,6 +60,7 @@ environment_graph = containers.Map();
 environment_graph("0") = [1];
 %}
 %% Init general parameters
+generate_rng(seed_rng); 
 verbose_level = 10;
 context = containers.Map();
 context("reward_matrix") = reward_matrix;
@@ -66,6 +68,7 @@ context("num_actions") = num_nodes;
 context("terminal") = goal;
 
 %% Init hyper parameters
+generate_rng(seed_rng); 
 gamma = 0.8;
 epsilon = 1;
 total_episodes = 1000;
@@ -87,11 +90,27 @@ history_episodes = qLearning.runEpisodes(@getRewardBestPath, false, context, ver
 t_end = toc(t_begin);
 fprintf("Elapsed time: %.4f [minutes]\n", t_end/60);
 
-history_episodes('Q_table')
+Q_table = history_episodes('Q_table')
 
 %% plot training result
-plot(scores);
+subplot(1, 2, 1);
+plot(history_episodes('history_scores'));
+title("Scores");
+subplot(1, 2, 2);
+plot(history_episodes('history_q_val'));
+title("Max q");
 
+%% test
 
-%% Test
+state = 1;
+best_path = [state];
+
+fprintf("Best path for begin in %d\n", state);
+
+for step=1:5
+    [~, action] = QLearning.selectActionQEpsilonGreedy(Q_table(state, :), qLearning.epsilon, 8, true);
+    state = action;
+    best_path = [best_path, state];
+end
+disp(best_path);
 

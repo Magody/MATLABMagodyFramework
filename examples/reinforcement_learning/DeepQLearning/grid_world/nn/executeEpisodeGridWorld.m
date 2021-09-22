@@ -1,4 +1,4 @@
-function history_episode = executeEpisodeGridWorld(gqnn, episode, total_episodes, is_test, functionGetReward, context, verbose_level) %#ok<INUSD>
+function history_episode = executeEpisodeGridWorld(q_neural_network, episode, is_test, functionGetReward, context, verbose_level) %#ok<INUSD>
                          
     history_episode = containers.Map();
     
@@ -15,13 +15,13 @@ function history_episode = executeEpisodeGridWorld(gqnn, episode, total_episodes
 
     while run_episode
 
-        [Qval, action] = gqnn.q_neural_network.selectAction(state', is_test);
+        [Qval, action] = q_neural_network.selectAction(state', is_test);
 
         % context is modified by reference
         [reward, new_state, finish] = functionGetReward(state, action, context);
 
         % dump custom debug
-        if is_test || episode >= total_episodes * 0.99
+        if is_test || episode >= q_neural_network.qLearningConfig.total_episodes * 0.99
             reshape(state, [3, 3])
             reshape(new_state, [3, 3])
             disp(Qval);
@@ -30,9 +30,9 @@ function history_episode = executeEpisodeGridWorld(gqnn, episode, total_episodes
 
 
         if ~is_test
-            gqnn.saveExperienceReplay(state, action, reward, new_state, finish);  
+            q_neural_network.saveExperienceReplay(state, action, reward, new_state, finish);  
             
-            history_learning = gqnn.learnFromExperienceReplay(episode, total_episodes, verbose_level);
+            history_learning = q_neural_network.learnFromExperienceReplay(episode, verbose_level);
             if history_learning('learned')
                 update_counter = update_counter + 1;
                 update_costs(1, update_counter) = history_learning('mean_cost'); %#ok<AGROW>
@@ -42,7 +42,7 @@ function history_episode = executeEpisodeGridWorld(gqnn, episode, total_episodes
         step = step + 1;
 
         if mod(step, 40) == 0
-           gqnn.updateQNeuralNetworkTarget(); 
+           q_neural_network.updateQNeuralNetworkTarget(); 
         end
 
         reward_cummulated = reward_cummulated + reward;
@@ -51,6 +51,12 @@ function history_episode = executeEpisodeGridWorld(gqnn, episode, total_episodes
             run_episode = false;
         end
     end
+    
+    if ~is_test
+        % QNN target strategy, for "stable" learning
+        q_neural_network.updateQNeuralNetworkTarget();
+    end
+                
     history_episode('reward_cummulated') = reward_cummulated;
     history_episode('update_costs') = update_costs;
     
