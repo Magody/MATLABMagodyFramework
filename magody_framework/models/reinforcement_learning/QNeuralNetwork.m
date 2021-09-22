@@ -2,18 +2,22 @@
 Made by: Danny Díaz
 EPN - 2021
 %}
-classdef QNeuralNetwork < handle
+classdef QNeuralNetwork < QLearning
     
     properties
         
         % Neural network parameters
         shape_input;
-        conv_network; % here is an optional network, {} for ignore it
-        network;
+        sequential_conv_network; % here is an optional network, {} for ignore it
+        sequential_network;
+        
+        sequential_conv_network_target; 
+        sequential_network_target;
+        
         shape_output;
         
         nnConfig;
-        qnnConfig;
+        qLearningConfig;
         
         % epsilon decay
         epsilon;
@@ -26,30 +30,44 @@ classdef QNeuralNetwork < handle
     end
     methods
         
-        function self = QNeuralNetwork(conv_network, network, nnConfig, qnnConfig)
-            % conv_network is optional, if empty the forward is made only
-            % with network
-            self.conv_network = conv_network;
-           
-            self.network = network;
-            self.nnConfig = nnConfig;
-            self.qnnConfig = qnnConfig;
+        function self = QNeuralNetwork(sequential_conv_network, sequential_network, nnConfig, qLearningConfig, functionExecuteEpisode)
             
-            self.epsilon = self.qnnConfig.initial_epsilon;
+            self = self@QLearning(qLearningConfig.gameReplayStrategy, qLearningConfig.experience_replay_reserved_space, functionExecuteEpisode);
+            self.actions = 1:self.q_neural_network.network{end}.shape_output;  
+            self.actions_length = length(self.actions);
+            self.initGameReplay(self.actions_length);
+            
+            self.sequential_conv_network = sequential_conv_network;
+            self.sequential_network = sequential_network;
+            
+            % theta freeze
+            self.sequential_conv_network_target = sequential_conv_network; 
+            self.sequential_network_target = sequential_network; 
+            % NN and QNN config
+            self.nnConfig = nnConfig;
+            self.qLearningConfig = qLearningConfig;
+            % decay epsilon/alpha
+            self.epsilon = self.qLearningConfig.initial_epsilon;
             self.alpha = self.nnConfig.learning_rate;
             
             self.use_convolutional = ~isempty(conv_network);
     
             if self.use_convolutional
-                self.shape_input = conv_network{1}.shape_input;
+                self.shape_input = sequential_conv_network.network{1}.shape_input;
             else
-                self.shape_input = network{1}.shape_input;
+                self.shape_input = sequential_network.network{1}.shape_input;
             end
             
-            self.shape_output = network{end}.shape_output;
+            self.shape_output = sequential_network.network{end}.shape_output;
         end
         
-        function history = train(self, X, Y, episode, total_episodes, verbose_level) %#ok<INUSD>
+        function updateQNeuralNetworkTarget(self)
+            % copy weights
+            self.sequential_conv_network_target.network = self.sequential_conv_network.network;
+            self.sequential_network_target.network = self.sequential_network.network; 
+        end
+        
+        function history = train(self, X, Y, episode, verbose_level) %#ok<INUSD>
             
             % is trained as multiclass classification
             
@@ -82,7 +100,6 @@ classdef QNeuralNetwork < handle
                     
                     output = self.forwardFull(x);
                     
-
                     % error
                     error = error + sum(sum(self.nnConfig.functionLossCost(y', output), 1), 2)/self.nnConfig.batch_size;
 
@@ -90,7 +107,9 @@ classdef QNeuralNetwork < handle
                         disp("Error: gradient exploding or vanishing");
                     end
                     
-                    self.backward(y', output);
+                    grad = self.nnConfig.functionLossGradient(transpose(y), output);
+                    grad = self.sequential_network.backward(grad, self.alpha);
+                    self.sequential_conv_network.backward(grad, self.alpha);
 
                 end
                 
@@ -102,7 +121,7 @@ classdef QNeuralNetwork < handle
             end
             
             % epsilon decay
-            self.epsilon = max(0.01, self.qnnConfig.initial_epsilon * log(exp(1) - ((exp(1) - 1) * (episode/total_episodes))));
+            self.epsilon = getEpsilonDecay(1, episode);
 
             % alpha decay
             self.alpha = self.nnConfig.learning_rate/(1 + self.nnConfig.decay_rate_alpha * episode);
@@ -112,72 +131,103 @@ classdef QNeuralNetwork < handle
         end
         
         function output = forwardFull(self, x)
-            
             features = x;
             
             if self.use_convolutional
-                features = self.forwardConv(x);
+                features = self.sequential_conv_network.forward(x);
             end
-            
-            output = self.forward(features);
-                    
+
+            output = self.sequential_network.forward(features);
+                     
         end
         
-        
-        function output = forwardConv(self, x)
-            % x is in three dimensions: height, width, depth
-            len_network = length(self.conv_network);
-            output = x;
-            for index_layer=1:len_network
-                output = self.conv_network{index_layer}.forward(output);
-            end
-        end
-        
-        function output = forward(self, x)
-            len_network = length(self.network);
-            output = x;
-            for index_layer=1:len_network
-                output = self.network{index_layer}.forward(output);
-            end
-        end
-        
-        function grad = backward(self, y, output)
-            len_network = length(self.network);
-            grad = self.nnConfig.functionLossGradient(y, output);
-            for index_layer=len_network:-1:1
-                grad = self.network{index_layer}.backward(grad, self.alpha);
-            end
-            
-            len_conv_network = length(self.conv_network);
-            for index_layer=len_conv_network:-1:1
-                grad = self.conv_network{index_layer}.backward(grad, self.alpha);
-            end
-        end
         
         function y_pred = predict(self, X)
             y_pred = self.forwardFull(X);
         end
         
-        function [Qval, action_index] = selectAction(self, state, is_test)
-            
+        function [max_q, action_index] = selectAction(self, state, is_test)
             
             Qval = self.forwardFull(state)'; 
-            [~, idx] = max(Qval); % obtengo indice de Qmax a partir de vector Qval
-
-            if ~is_test
-                % Epsilon-greedy action selection
-                % Inicialmente hace solo exploracion, luego el valor de epsilon se va reduciendo a medida que tengo mas informacion
-                % Si rand <= epsilon, obtengo un Q de manera aleatoria, el cual será diferente a Qmax (exploracion)
-
-                v = rand;
-                if v <= self.epsilon       
-                    full_action_list = 1:self.network{end}.shape_output;   
-                    actionList = full_action_list(full_action_list ~= idx);      %  Crea lista con las acciones q no tienen Qmax
-                    idx_valid_action = randi([1 length(actionList)]);
-                    idx = full_action_list(actionList(idx_valid_action));
-                end
+            [max_q, action_index] = QLearning.selectActionQEpsilonGreedy(Qval, self.epsilon, self.network{end}.shape_output, is_test);
+            
+        end
+        
+        function history_learning = learnFromExperienceReplay(self, episode, verbose_level)
+            
+            history_learning = containers.Map();
+            history_learning('learned') = false;
+            
+            valid_replay = getCellsNotEmpty(self.gameReplay);
+            %{
+            pending optimice with flag
+            if self.gameReplayCounter < length(self.gameReplay)
+                valid_replay = getCellsNotEmpty(self.gameReplay);
+            else
+                valid_replay = self.gameReplay;
             end
-            action_index = idx;  
+            %}
+            
+            if length(valid_replay) < self.nnConfig.batch_size
+                return;
+            end
+            
+            
+            [~, idx] = sort(rand(length(valid_replay), 1));
+            randIdx = idx(1:self.nnConfig.batch_size);
+            
+            dataX = zeros([self.shape_input, self.nnConfig.batch_size]);
+            dataY = zeros(self.nnConfig.batch_size, self.actions_length);
+            
+            input_dim = length(self.shape_input);
+
+            % Computations for the minibatch
+            for numExample=1:self.nnConfig.batch_size
+
+                % Getting the value of Q(s, a)
+                s = valid_replay{randIdx(numExample)}.state;
+                s_Qval = self.forwardFull(s);
+                
+                % Getting the value of max_a_Q(s',a')
+                s_prime = valid_replay{randIdx(numExample)}.new_state;
+                
+                features = self.sequential_conv_network.forward(s_prime);
+                s_prime_Qval = self.sequential_network.forward(features);
+                maxQval_er = max(s_prime_Qval);
+                
+                % selected action and reward
+                action_er = valid_replay{randIdx(numExample)}.action;
+                reward_er = valid_replay{randIdx(numExample)}.reward;
+
+                is_terminal = valid_replay{randIdx(numExample)}.is_terminal;
+                if is_terminal
+                    % Terminal state
+                    update_er = reward_er;
+                else
+                    % Non-terminal state
+                    update_er = reward_er + self.qLearningConfig.gamma*maxQval_er;
+                end
+
+                % Data for training
+                if input_dim == 1
+                    dataX(:, numExample) = s;
+                elseif input_dim == 2
+                    dataX(:, :, numExample) = s;
+                elseif input_dim == 3
+                    dataX(:, :, :, numExample) = s;
+                end
+                
+                dataY(numExample, :) = s_Qval;
+                dataY(numExample, action_er) = update_er;
+                
+            end
+            
+            
+            history = self.train(dataX, dataY, episode, verbose_level-1);
+            
+            history_learning('mean_cost') = mean(history('history_errors'));
+            
+            history_learning('learned') = true;
             
         end
     

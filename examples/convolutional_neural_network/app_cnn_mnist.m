@@ -38,7 +38,7 @@ len_data = size(Y, 1);
 %% Split sets
 generate_rng(seed_rng);
 
-[X_train, y_train, X_test, y_test, X_validation, y_validation] = split_data_2D(X, Y, 0.01, 0.1);
+[X_train, y_train, X_test, y_test, X_validation, y_validation] = split_data_2D(X, Y, 0.1, 0.1);
 
 X_train = reshape(X_train, [28, 28, 1, size(y_train, 1)]);
 X_test = reshape(X_test, [28, 28, 1, size(y_test, 1)]);
@@ -67,8 +67,8 @@ dir_figures = dir_model + "/figures/";
 generate_rng(seed_rng);
 epochs = 10;
 learning_rate = 0.01;
-decay_rate_alpha = 0.1;
-batch_size = 32;
+decay_rate_alpha = 0.01;
+batch_size = 64;
 
 conv_sequential = Sequential({...
     Convolutional([3, 3], 32, 0, 1, shape_input), ...

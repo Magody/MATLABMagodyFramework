@@ -43,6 +43,14 @@ classdef Sequential < handle
                 output = self.network{index_layer}.forward(output);
             end
         end
+        
+        function grad = backward(self, initial_gradient, alpha)
+            len_network = length(self.network);
+            grad = initial_gradient;
+            for index_layer=len_network:-1:1
+                grad = self.network{index_layer}.backward(grad, alpha);
+            end
+        end
     
     end
     

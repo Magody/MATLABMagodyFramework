@@ -1,0 +1,17 @@
+- Add temporal difference.
+- Check adam, maybe we should accumulate the gradient until reach the end of epoch.
+- Optimice CNN -> vectorice backward for Convolutional and Pooling layers, and add vectorization when using stride > 1 for both.
+- Include Leaky relu activation function.
+- Add Batch normalization layer.
+- Add normalizations.
+- Add K-fold.
+- Set history information to detect overfitting, first of all use a validation set in normal Neural Network.
+- Create purelin activation -> is this different from final ouput or its not necessary to create this function?
+- Add GPU operations optimization. Priorizing reusability of code.
+- Create experiment and excel writer. Reusable.
+- Include Dropout layer for NN.
+- Models are heavy in MB, optimice that with function to store only trully necessary values.
+- Remove unnecesary code, refactor.
+- Include a function to compute numerical gradient, to test that gradient is actually correct.
+- epsilon and alpha decay should decay by inner epoch or episode? Move and parametice according to.
+- implement ResNet residual blocks
