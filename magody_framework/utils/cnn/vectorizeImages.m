@@ -32,7 +32,7 @@ function [vectorized, shape_new_image] = vectorizeImages(images, kernel_size)
                 
 
                 for j=1:limit_cols
-                    patch = images(i:i+kernel_size-1, j:j+kernel_size-1, channel, sample);
+                    patch = images(i:i+kernel_size(1)-1, j:j+kernel_size(2)-1, channel, sample);
 
                     
                     vectorized(index_result, index_channel_begin:index_channel_end, sample) = patch(:)';

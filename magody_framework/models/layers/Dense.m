@@ -19,16 +19,29 @@ classdef Dense < Layer
         sdw = 0;
         sdb = 0;
         t = 0;
+        
+        % init mode
+        mode;
     end
     
     methods
         
-        function self = Dense(shape_output, shape_input)
+        function self = Dense(shape_output, mode, shape_input)
             % shape_input and shape_output are scalars
             self.shape_output = shape_output;
-            if nargin == 2
+            
+            if nargin >= 2
+                self.mode = mode;
+            else
+                self.mode = "xavier";
+            end
+            
+            if nargin >= 3
                 self.init(shape_input);
             end
+            
+            
+            
             
             
         end
@@ -36,8 +49,8 @@ classdef Dense < Layer
         function shape_output = init(self, shape_input)
             self.shape_input = shape_input;
             shape_output = self.shape_output;
-            self.weights = getWeights(0, 0.5, [shape_output, shape_input]);
-            self.bias = getWeights(0, 0.5, [shape_output, 1]);
+            self.weights = getWeights(0, 0.5, [shape_output, shape_input], self.mode);
+            self.bias = getWeights(0, 0.5, [shape_output, 1], self.mode);
         end
         
         function output = forward(self, input)

@@ -106,7 +106,7 @@ classdef QLearning < handle
                 index_replay = offset+index_experience_replay;
                 
             else
-                index_replay = mod(self.gameReplayCounter, size(self.gameReplay, 1));
+                index_replay = mod(self.gameReplayCounter, length(self.gameReplay));
                 if index_replay == 0
                    index_replay =  size(self.gameReplay, 1);
                 end

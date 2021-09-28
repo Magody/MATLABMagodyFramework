@@ -185,13 +185,13 @@ classdef QNeuralNetwork < QLearning
 
                 % Getting the value of Q(s, a)
                 s = valid_replay{randIdx(numExample)}.state;
-                s_Qval = self.forwardFull(s');
+                s_Qval = self.forwardFull(s);
                 
                 % Getting the value of max_a_Q(s',a')
                 s_prime = valid_replay{randIdx(numExample)}.new_state;
                 
-                features = self.sequential_conv_network.forward(s_prime');
-                s_prime_Qval = self.sequential_network.forward(features);
+                features = self.sequential_conv_network_target.forward(s_prime);
+                s_prime_Qval = self.sequential_network_target.forward(features);
                 maxQval_er = max(s_prime_Qval);
                 
                 % selected action and reward

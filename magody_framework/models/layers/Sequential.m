@@ -37,6 +37,8 @@ classdef Sequential < handle
         end
         
         function output = forward(self, x)
+            
+            
             len_network = length(self.network);
             output = x;
             for index_layer=1:len_network

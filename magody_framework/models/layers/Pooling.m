@@ -10,6 +10,7 @@ classdef Pooling < Layer
         shape_output;
         type;
         
+        shape_kernel;
         stride = 2;
         % cache
         mask; % for debug, remove assignaments in production
@@ -17,13 +18,21 @@ classdef Pooling < Layer
     end
     
     methods
-        function self = Pooling(type, shape_input)
+        function self = Pooling(type, shape_kernel, shape_input)
             self.type = type;
             self.stride = 2;
             
-            if nargin == 2
+            if nargin >= 2
+                self.shape_kernel = shape_kernel;
+            else
+                self.shape_kernel = [2, 2];
+            end
+            
+            if nargin >= 3
                 self.init(shape_input);
             end
+            
+            
             
         end
         
@@ -32,9 +41,9 @@ classdef Pooling < Layer
             self.shape_input = shape_input;
             
             if self.type == "mean"
-                self.shape_output = [floor(shape_input(1)/2), floor(shape_input(2)/2), shape_input(3)];
+                self.shape_output = [floor(shape_input(1)/self.shape_kernel(1)), floor(shape_input(2)/self.shape_kernel(2)), shape_input(3)];
             elseif self.type == "max"
-                self.shape_output = [floor(shape_input(1)/2), floor(shape_input(2)/2), shape_input(3)];
+                self.shape_output = [floor(shape_input(1)/self.shape_kernel(1)), floor(shape_input(2)/self.shape_kernel(2)), shape_input(3)];
             end
             
             shape_output = self.shape_output;
@@ -51,7 +60,7 @@ classdef Pooling < Layer
             numFilters = size(input, 3);
             
             
-            filter = ones(2)/(2*2);
+            filter = ones(self.shape_kernel)/(prod(self.shape_kernel));
                 
             if self.type == "mean"
                 % rot180 for correlation = convolution
@@ -131,7 +140,7 @@ classdef Pooling < Layer
             
             if self.type == "mean"
                 
-                filter = ones(2)/(2*2);
+                filter = ones(self.shape_kernel)/(prod(self.shape_kernel));
                 
                 kernels = repmat(filter, [1, 1, channels]);
                         
@@ -171,11 +180,11 @@ classdef Pooling < Layer
             num_filters = self.shape_output(3);
             
             if self.type == "mean"
-                W = ones(self.shape_input) / (2*2);
+                W = ones(self.shape_input) / (prod(self.shape_kernel));
                 
                 for sample=1:m
                     for c=1:num_filters
-                       input_gradient(:,:, c, sample) = kron(output_gradient(:, :, c, sample), ones([2 2])) .* W(:, :, c);
+                       input_gradient(:,:, c, sample) = kron(output_gradient(:, :, c, sample), ones(self.shape_kernel)) .* W(:, :, c);
                     end                
                 end
                 
