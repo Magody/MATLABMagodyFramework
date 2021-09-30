@@ -31,6 +31,7 @@ classdef NNConfig < handle
         
         function self = NNConfig(epochs, learning_rate, batch_size, loss)
             
+            
             self.epochs = epochs;
             self.learning_rate = learning_rate;
             self.batch_size = batch_size;
@@ -41,6 +42,10 @@ classdef NNConfig < handle
             elseif loss == "softmax_cross_entropy"
                 self.functionLossCost = @Loss.binary_cross_entropy;
                 self.functionLossGradient = @Loss.softmaxGradient;
+            elseif loss == "huber"
+                % not implemented
+                % self.functionLossCost = @Loss.huber;
+                % self.functionLossGradient = @Loss.huber_derivative;
             end
     
         end

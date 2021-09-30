@@ -8,12 +8,10 @@ a = ceil(rand * 10000);
 assert(a == 5680);
 
 %% Libs
-%{
-setenv("path_to_framework", "/home/magody/programming/MATLAB/deep_learning_from_scratch/magody_framework");
-setenv("path_to_mnist_cloth_dataset", "/home/magody/programming/MATLAB/deep_learning_from_scratch/examples/dataset");
-%} 
-path_to_framework = getenv("path_to_framework");
-path_to_mnist_cloth_dataset = getenv("path_to_mnist_cloth_dataset");
+% setenv("path_to_framework") = "/home/magody/programming/MATLAB/deep_learning_from_scratch/magody_framework";
+% setenv("path_to_mnist_cloth_dataset") = "/home/magody/programming/MATLAB/deep_learning_from_scratch/examples/dataset";
+path_to_framework = ge
+path_to_mnist_cloth_dataset = 
 
 addpath(genpath(path_to_framework));
 addpath(genpath(path_to_mnist_cloth_dataset));

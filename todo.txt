@@ -13,5 +13,7 @@
 - Models are heavy in MB, optimice that with function to store only trully necessary values.
 - Remove unnecesary code, refactor.
 - Include a function to compute numerical gradient, to test that gradient is actually correct.
+- parametrizar los valores de Adam
 - epsilon and alpha decay should decay by inner epoch or episode? Move and parametice according to.
 - implement ResNet residual blocks
+

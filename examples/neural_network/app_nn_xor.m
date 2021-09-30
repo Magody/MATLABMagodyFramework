@@ -18,15 +18,17 @@ len_data = size(Y, 1);
 %% Init parameters
 
 generate_rng(seed_rng);
-epochs = 200;
+epochs = 100;
 learning_rate = 0.01;
 batch_size = 2;
 verbose_level = 10;
 decay_rate_alpha = 0.01;
 
+% Dropout(0.5), ...
+
 sequential_network = Sequential({
-    Dense(5, 2), ...
-    Activation("tanh"), ...
+    Dense(5, "kaiming", 2), ...
+    Activation("relu"), ...
     Dense(1), ...
     Activation("sigmoid") ...
 });
@@ -41,6 +43,7 @@ neural_network = NeuralNetwork(sequential_network, nnConfig);
 
 history = neural_network.train(X, Y, verbose_level);
 
+fprintf("Mean error: %.4f\n", mean(history("error")));
 plot(history("error"));
 
 %% prediction

@@ -37,7 +37,7 @@ classdef Activation < Layer
             shape_output = self.shape_output;
         end
         
-        function output = forward(self, input)
+        function output = forward(self, input, context)
             self.input = input;
             output = self.activation(self.input);
         end

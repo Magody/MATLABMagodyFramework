@@ -11,7 +11,7 @@ classdef (Abstract) Layer < handle
     
     methods (Abstract)
         % return output
-        output = forward(self);
+        output = forward(self, input, context);
         % update parameters and return input gradient
         input_gradient = backward(self, output_gradient, learning_rate);
         % init shapes and others
