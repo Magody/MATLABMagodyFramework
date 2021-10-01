@@ -2,15 +2,38 @@
 clear all;
 clc;
 close all;
-
 seed_rng = 44;
+generate_rng(seed_rng);
+a = ceil(rand * 10000);
+assert(a == 5680);
+
 %% Libs
-path_to_framework = "/home/magody/programming/MATLAB/deep_learning_from_scratch/magody_framework";
-path_to_mnist_cloth_dataset = "/home/magody/programming/MATLAB/deep_learning_from_scratch/examples/dataset";
-dir_base_models_result = "/home/magody/programming/MATLAB/deep_learning_from_scratch/examples/convolutional_neural_network/models_result";
+%{
+setenv("path_to_framework", "/home/magody/programming/MATLAB/deep_learning_from_scratch/magody_framework");
+setenv("path_to_mnist_cloth_dataset", "/home/magody/programming/MATLAB/deep_learning_from_scratch/examples/dataset");
+setenv("dir_base_models_result", "/home/magody/programming/MATLAB/deep_learning_from_scratch/examples/convolutional_neural_network/models_result");
+%} 
+path_to_framework = getenv("path_to_framework");
+path_to_mnist_cloth_dataset = getenv("path_to_mnist_cloth_dataset");
+dir_base_models_result = getenv("dir_base_models_result");
 
 addpath(genpath(path_to_framework));
 addpath(genpath(path_to_mnist_cloth_dataset));
+
+
+%% Init parameters
+class_names = ["Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot", "T-shirt"];
+
+shape_input = [28, 28, 1];
+verbose_level = 10;
+model_name = "debug";
+dir_model = dir_base_models_result + "/" + model_name;
+dir_vars = dir_model + "/vars/";
+dir_figures = dir_model + "/figures/";
+% creates the directory if it doesnt exists
+[status, msg, msgID] = mkdir(dir_model); %#ok<ASGLU>
+[status, msg, msgID] = mkdir(dir_vars); %#ok<ASGLU>
+[status, msg, msgID] = mkdir(dir_figures);
 
 
 %% Load data
@@ -38,7 +61,7 @@ len_data = size(Y, 1);
 %% Split sets
 generate_rng(seed_rng);
 
-[X_train, y_train, X_test, y_test, X_validation, y_validation] = split_data_2D(X, Y, 0.1, 0.1);
+[X_train, y_train, X_test, y_test, X_validation, y_validation] = split_data_2D(X, Y, 0.7, 0.1);
 
 X_train = reshape(X_train, [28, 28, 1, size(y_train, 1)]);
 X_test = reshape(X_test, [28, 28, 1, size(y_test, 1)]);
@@ -49,29 +72,16 @@ image_test = reshape(X_test(:, :, 1, index_image_test), 28, 28);
 imshow(image_test);
 disp(y_test(index_image_test, :));
 
-%% Init parameters
-class_names = ["Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot", "T-shirt"];
-
-shape_input = [28, 28, 1];
-verbose_level = 10;
-model_name = "debug";
-dir_model = dir_base_models_result + "/" + model_name;
-dir_vars = dir_model + "/vars/";
-dir_figures = dir_model + "/figures/";
-% creates the directory if it doesnt exists
-[status, msg, msgID] = mkdir(dir_model); %#ok<ASGLU>
-[status, msg, msgID] = mkdir(dir_vars); %#ok<ASGLU>
-[status, msg, msgID] = mkdir(dir_figures);
 
 %% hyper parameters
 generate_rng(seed_rng);
-epochs = 10;
-learning_rate = 0.01;
+epochs = 50;
+learning_rate = 0.0003;
 decay_rate_alpha = 0.01;
-batch_size = 64;
+batch_size = 32;
 
 conv_sequential = Sequential({...
-    Convolutional([3, 3], 32, 0, 1, shape_input), ...
+    Convolutional([3, 3], 3, 0, 1, shape_input), ...
     Activation("relu"), ....
     Pooling("max"), ...
     Reshape(), ...
@@ -80,9 +90,10 @@ conv_sequential = Sequential({...
 input_dense = prod(conv_sequential.shape_output);
    
 sequential = Sequential({
-    Dense(100, input_dense), ...
+    Dense(128, "kaiming", input_dense), ...
     Activation("relu"), ...
-    Dense(10), ...
+    Dropout(0.3), ...
+    Dense(10, "xavier"), ...
     ActivationOnlyForward("softmax"), ...
 });
 
@@ -115,23 +126,6 @@ figure(1);
 plot(history("error"));
 
 saveas(gcf, dir_figures + "loss.png");
-
-
-figure(2);
-times_conv_network_forward = history('times_conv_network_forward');
-times_network_forward = history('times_network_forward');
-times_conv_network_backward = history('times_conv_network_backward');
-times_network_backward = history('times_network_backward');
-
-subplot(2,2,1);
-plot(sum(times_conv_network_forward, 2));
-subplot(2,2,2);
-plot(sum(times_network_forward, 2));
-subplot(2,2,3);
-plot(sum(times_conv_network_backward, 2));
-subplot(2,2,4);
-plot(sum(times_network_backward, 2));
-saveas(gcf, dir_figures + "times.png");
 
 %% prediction
 fprintf("\nPREDICTION\n");

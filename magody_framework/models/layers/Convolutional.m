@@ -6,6 +6,10 @@ classdef Convolutional < Layer
     
     properties
         
+        % init weights
+        init_mean = 0;
+        init_std = 1;
+        
         shape_input;
         shape_output;
         
@@ -23,7 +27,7 @@ classdef Convolutional < Layer
         shape_kernels;
         shape_kernel_matrix;
         kernels;
-        biases;
+        bias;
         
         % ADAM optimizer
         vdw = 0;
@@ -44,9 +48,12 @@ classdef Convolutional < Layer
             self.padding = padding;
             self.stride = stride;
             
-            if nargin == 5
+            
+            if nargin >= 5
                 self.init(shape_input);
             end
+            
+            
             
             
         end
@@ -62,13 +69,20 @@ classdef Convolutional < Layer
             self.shape_kernels = [self.shape_kernel_matrix, self.input_depth, self.num_filters];
             
             
-            previous_neurons = 1;
-            for i=1:length(self.shape_input)
-                previous_neurons = previous_neurons * self.shape_input(i);
-            end
+            % previous_neurons = prod(self.shape_kernel_matrix)*self.input_depth;
+            % prod(self.shape_input);
+            % 
             
-            self.kernels = getCNNWeights(0, 0.5, self.shape_kernels, previous_neurons);
-            self.biases = getCNNWeights(0, 0.5, self.shape_output, previous_neurons);
+            % kaiming he https://www.telesens.co/2018/04/09/initializing-weights-for-the-convolutional-and-fully-connected-layers/
+            
+            n = self.input_depth * prod(self.shape_kernel_matrix);
+            
+            % sigma = sqrt(2/n);
+            % normrnd(0, sigma, self.shape_kernels);
+            
+            
+            self.kernels = getWeights(self.init_mean, self.init_std, self.shape_kernels, n, "He");
+            self.bias = zeros(self.shape_output);
             
             shape_output = self.shape_output;
         end
@@ -85,7 +99,7 @@ classdef Convolutional < Layer
             
             for sample=1:m
                 % copy of bias
-                self.output = reshape(self.biases(:), self.shape_output); % zeros(self.shape_output); reshape(self.biases(:), self.shape_output);
+                self.output = reshape(self.bias(:), self.shape_output); % zeros(self.shape_output); reshape(self.bias(:), self.shape_output);
                 
                 for i=1:self.num_filters
                     for j=1:self.input_depth
@@ -99,7 +113,7 @@ classdef Convolutional < Layer
             
         end
         
-        function output = forward(self, input)
+        function output = forward(self, input, context)
             self.t = self.t + 1;
             
             channels = size(input, 3);
@@ -115,7 +129,7 @@ classdef Convolutional < Layer
             output = zeros([self.shape_output, m]);
             for sample=1:m
                 correlation = transpose(vectorized_images(:, :, sample) * vectorized_kernels);
-                correlation_reshaped = reshapeCorrelation(correlation, channels, shape_new_image) + self.biases;
+                correlation_reshaped = reshapeCorrelation(correlation, channels, shape_new_image) + self.bias;
                 output(:, :, :, sample) = correlation_reshaped;
             end
             
@@ -167,14 +181,14 @@ classdef Convolutional < Layer
             
             
             self.kernels = self.kernels - learning_rate * (self.vdw./(sqrt(self.sdw) + eps));
-            self.biases = self.biases - learning_rate * (self.vdb./(sqrt(self.sdb) + eps));
+            self.bias = self.bias - learning_rate * (self.vdb./(sqrt(self.sdb) + eps));
             %{
             
             self.kernels = self.kernels - learning_rate * kernels_gradient;
-            self.biases = self.biases - learning_rate * sum(output_gradient, 4);
+            self.bias = self.bias - learning_rate * sum(output_gradient, 4);
             
             self.kernels = self.kernels - learning_rate * (self.vdw./(sqrt(self.sdw) + eps));
-            self.biases = self.biases - learning_rate * (self.vdb./(sqrt(self.sdb) + eps));
+            self.bias = self.bias - learning_rate * (self.vdb./(sqrt(self.sdb) + eps));
             
             
             %}

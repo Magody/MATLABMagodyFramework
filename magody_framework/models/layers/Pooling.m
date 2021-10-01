@@ -49,7 +49,7 @@ classdef Pooling < Layer
             shape_output = self.shape_output;
         end
         
-        function output = forward(self, input)
+        function output = forward(self, input, context)
             % input = X => each col is an example
             m = size(input, 4);
             self.input = input;

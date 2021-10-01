@@ -9,6 +9,10 @@ classdef Dense < Layer
         weights;
         bias;
         
+        % init
+        init_mean = 0;
+        init_std = 1;
+        
         
         shape_input;
         shape_output;
@@ -28,6 +32,9 @@ classdef Dense < Layer
         
         function self = Dense(neurons_output, mode, neurons_input)
             % shape_input and shape_output are scalars
+            
+            
+            
             self.shape_output = [neurons_output, 1];
             
             if nargin >= 2
@@ -40,17 +47,14 @@ classdef Dense < Layer
                 self.init([neurons_input, 1]);
             end
             
-            
-            
-            
-            
         end
         
         function shape_output = init(self, shape_input)
             self.shape_input = shape_input;
             shape_output = self.shape_output;
-            self.weights = getWeights(0, 0.5, [shape_output(1), shape_input(1)], self.mode);
-            self.bias = getWeights(0, 0.5, [shape_output(1), 1], self.mode);
+            
+            self.weights = getWeights(self.init_mean, self.init_std, [shape_output(1), shape_input(1)], shape_input(1), self.mode);
+            self.bias = zeros([shape_output(1), 1]);
         end
         
         function output = forward(self, input, context)

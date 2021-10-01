@@ -27,27 +27,39 @@ classdef NeuralNetwork < handle
             history = containers.Map();
 
             history_errors = zeros([1, self.nnConfig.epochs]);
-            len_data_train = size(X, 2);
             
+            shape_input = size(X);
+            num_dims = length(shape_input);
+            
+            is_two_dimensional = num_dims == 2;
+            
+            len_data_train = shape_input(end);
             num_batchs = ceil(len_data_train/self.nnConfig.batch_size);
-
+                        
             for e=1:self.nnConfig.epochs
                 error = 0;
                 for index_data=1:self.nnConfig.batch_size:len_data_train
-                    batch_range = index_data:min(len_data_train, index_data+self.nnConfig.batch_size-1);
-
-                    x = X(:, batch_range);
+                    
+                    batch_end = index_data+self.nnConfig.batch_size-1;
+                    
+                    if batch_end > len_data_train
+                        batch_range = index_data:len_data_train;
+                    else
+                        batch_range = index_data:batch_end;
+                    end
+                    
+                    % parametization for other integrations
+                    if is_two_dimensional
+                        x = X(:, batch_range);
+                    else
+                        x = X(:, :, :, batch_range);
+                    end
                     y = Y(batch_range, :);
-
-                    output = self.sequential_network.forward(x, context);
+                    
+                    output = self.forwardFull(x, context);
                     
                     % error
                     error = error + sum(sum(self.nnConfig.functionLossCost(y', output), 1), 2)/self.nnConfig.batch_size;
-
-                    if isnan(error) || sum(sum(isnan(output))) > 0
-                        disp("Gradient exploding or vanishing");
-                    end
-                    
                     
                     self.backward(y', output);
                     
@@ -57,6 +69,10 @@ classdef NeuralNetwork < handle
                 self.alpha = self.nnConfig.learning_rate/(1 + self.nnConfig.decay_rate_alpha * e);
 
                 error = error / num_batchs;
+                
+                if isnan(error)
+                    disp("Gradient exploding");
+                end
                 
                 history_errors(1, e) = error;
 
@@ -68,6 +84,15 @@ classdef NeuralNetwork < handle
             history('error') = history_errors;
         end
         
+    end
+    
+    methods (Access = public)
+        % this methods will be overriden by childs
+        
+        function output = forwardFull(self, x, context)
+            output = self.sequential_network.forward(x, context);
+        end
+        
         function grad = backward(self, y, output)
             len_network = length(self.sequential_network.network);
             grad = self.nnConfig.functionLossGradient(y, output);
@@ -76,46 +101,9 @@ classdef NeuralNetwork < handle
             end
         end
         
-        function y_pred = predict(self, X, batch_size)
-            
-            
-            
+        function y_pred = predict(self, X)
             context = containers.Map({'is_test'}, {true});
-            m = size(X, 2);
-            
-            if nargin == 2
-               batch_size = m; 
-            end
-            
-            y_pred = zeros([self.sequential_network.shape_output(1), m]);
-            
-            for i=1:batch_size:m
-                batch_begin = i;
-                batch_end = i+batch_size-1;
-                
-                if batch_end > m
-                    
-                    diff = batch_end - m;
-                    batch_range = batch_begin:m;
-                    
-                    batch_X = [X(:, batch_range), X(:, (m-diff+1):m)];
-                    
-                    output = self.sequential_network.forward(batch_X, context);
-                    y_pred(:, batch_range) = output(:, 1:batch_size-diff);
-                
-                else
-                    batch_range = batch_begin:batch_end;
-                    batch_X = X(:, batch_range);
-                    
-                    y_pred(:, batch_range) = self.sequential_network.forward(batch_X, context);
-                
-                end
-                
-                
-            end
-            
-            
-            
+            y_pred = self.forwardFull(X, context);
         end
     
     end

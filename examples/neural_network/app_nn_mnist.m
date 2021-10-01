@@ -19,7 +19,6 @@ addpath(genpath(path_to_framework));
 addpath(genpath(path_to_mnist_cloth_dataset));
 
 %% Init parameters
-generate_rng(seed_rng);
 verbose_level = 10;
 normalice_data = true;
 % vertical is throught each sample, allong all its features
@@ -59,6 +58,7 @@ Y = sparse_one_hot_encoding(Y, 10);
 len_data = size(Y, 1);
 
 %% Split sets
+generate_rng(seed_rng);
 
 [X_train, y_train, X_test, y_test, X_validation, y_validation] = split_data_2D(X, Y, 0.7, 0.1);
 
@@ -82,6 +82,7 @@ batch_size = 56;
 
 % BatchNormalization() not combine with dropout, ...
 % https://arxiv.org/pdf/1801.05134.pdf
+
 sequential = Sequential({
     Dense(128, 'kaiming', 28 * 28), ...
     Activation("relu"), ...

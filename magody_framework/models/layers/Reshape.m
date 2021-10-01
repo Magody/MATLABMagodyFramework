@@ -32,7 +32,7 @@ classdef Reshape < Layer
         
         
         
-        function output = forward(self, input)
+        function output = forward(self, input, context)
             m = size(input, 4);
             self.shape_input(4) = m;
             output = reshape(input, [self.shape_output, m]);

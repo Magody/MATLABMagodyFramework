@@ -1,23 +1,21 @@
-function W = getWeights(mean, sigma, shape, mode)
+function W = getWeights(mean, sigma, shape, previous_neurons, mode)
 % Reference: https://towardsdatascience.com/all-ways-to-initialize-your-neural-network-16a585574b52
 
 
-% generally the output size
-neurons_i = shape(1);
-% generally the input size
-neurons_iminus1 = shape(2);
-
 if mode == "xavier"
     % xavier: good for tanh, sigmoid and just a little with Relu
-    W = normrnd(mean, sigma, neurons_i, neurons_iminus1)* sqrt(1/neurons_iminus1);
+    W = normrnd(mean, sigma, shape)* sqrt(1/previous_neurons);
  
-elseif mode == "kaiming"
+elseif mode == "kaiming" || mode == "He"
+    % also called He, Is Kaiming He
     % kaiming good with ReluNonlinearities. ReLU changes the activations and the variance is halved, so we need to double the variance to get the original effect of Xavier
-    W = normrnd(mean, sigma, neurons_i, neurons_iminus1) * sqrt(2/neurons_iminus1);
+    % (1+a.^2) * previous_neurons), a in RelU is 0
+    a = 0;  % other relu should change it
+    W = normrnd(mean, sigma, shape) * sqrt(2/((1+a.^2) * previous_neurons));
 
 else
     % default xavier: good for tanh, sigmoid and a little with Relu
-    W = normrnd(mean, sigma, neurons_i, neurons_iminus1) * sqrt(1/neurons_iminus1);
+    W = normrnd(mean, sigma, shape) * sqrt(1/previous_neurons);
  
 end
 
