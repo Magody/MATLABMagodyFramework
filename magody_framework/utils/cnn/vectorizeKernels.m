@@ -5,7 +5,7 @@ function vectorized = vectorizeKernels(kernels)
     [rows, cols, input_depth, num_filters] = size(kernels);
     
     elements_per_kernel = rows * cols;
-    vectorized = zeros([elements_per_kernel * input_depth, num_filters]);
+    vectorized = zeros([num_filters, elements_per_kernel * input_depth]);
 
 
 
@@ -15,7 +15,7 @@ function vectorized = vectorizeKernels(kernels)
             
             index_depth_begin = (depth-1) * elements_per_kernel + 1;
             index_depth_end = depth * elements_per_kernel;
-            vectorized(index_depth_begin:index_depth_end, filter) = kernel(:);
+            vectorized(filter, index_depth_begin:index_depth_end) = kernel(:);
             
         end
         

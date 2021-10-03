@@ -1,4 +1,4 @@
-function output = reshapeCorrelation(correlation, channels, shape_matrix)
+function output = reshapeCorrelation(correlation, shape_matrix)
 
 [num_filters, ~] = size(correlation);
 

@@ -34,6 +34,14 @@ dir_figures = dir_model + "/figures/";
 [status, msg, msgID] = mkdir(dir_model); %#ok<ASGLU>
 [status, msg, msgID] = mkdir(dir_vars); %#ok<ASGLU>
 [status, msg, msgID] = mkdir(dir_figures);
+normalice_data = true;
+% vertical is throught each sample, allong all its features
+% horizontal is throught the same features along all samples
+% all is throught all matrix composition
+% usually horizontal is used
+normalice_mode = "horizontal2D";
+
+% normalice refers to standardization or normalization
 
 
 %% Load data
@@ -52,6 +60,13 @@ dir_figures = dir_model + "/figures/";
 %}
 % already normaliced [0, 1] gray scale
 X = loadMNISTImages('dataset/t10k-images-idx3-ubyte');
+
+if normalice_data
+    [X, data_mean, data_std] = standardization(X, normalice_mode);
+    % data_mean and data_std should be saved for new data incoming
+end
+
+
 Y = loadMNISTLabels('dataset/t10k-labels-idx1-ubyte');
 Y(Y == 0) = 10;
 Y = sparse_one_hot_encoding(Y, 10);
@@ -61,7 +76,7 @@ len_data = size(Y, 1);
 %% Split sets
 generate_rng(seed_rng);
 
-[X_train, y_train, X_test, y_test, X_validation, y_validation] = split_data_2D(X, Y, 0.7, 0.1);
+[X_train, y_train, X_test, y_test, X_validation, y_validation] = split_data_2D(X, Y, 0.1, 0.6);
 
 X_train = reshape(X_train, [28, 28, 1, size(y_train, 1)]);
 X_test = reshape(X_test, [28, 28, 1, size(y_test, 1)]);
@@ -69,19 +84,21 @@ X_validation = reshape(X_validation, [28, 28, 1, size(y_validation, 1)]);
 % test image read is correct even after split
 index_image_test = 55;
 image_test = reshape(X_test(:, :, 1, index_image_test), 28, 28);
-imshow(image_test);
+if ~normalice_data || normalice_mode ~= "all"
+    imshow(image_test);  % if no standarization aplied should show the object
+end
 disp(y_test(index_image_test, :));
 
 
 %% hyper parameters
 generate_rng(seed_rng);
-epochs = 50;
-learning_rate = 0.0003;
+epochs = 10;
+learning_rate = 0.003;
 decay_rate_alpha = 0.01;
 batch_size = 32;
 
 conv_sequential = Sequential({...
-    Convolutional([3, 3], 3, 0, 1, shape_input), ...
+    Convolutional([3, 3], 8, 0, 1, shape_input), ...
     Activation("relu"), ....
     Pooling("max"), ...
     Reshape(), ...
@@ -90,10 +107,10 @@ conv_sequential = Sequential({...
 input_dense = prod(conv_sequential.shape_output);
    
 sequential = Sequential({
-    Dense(128, "kaiming", input_dense), ...
+    Dense(100, "kaiming", input_dense), ...
     Activation("relu"), ...
     Dropout(0.3), ...
-    Dense(10, "xavier"), ...
+    Dense(10, "kaiming"), ...
     ActivationOnlyForward("softmax"), ...
 });
 
@@ -118,7 +135,7 @@ save(dir_vars + "dir_vars", "dir_vars");
 save(dir_vars + "verbose_level", "verbose_level");
 
 
-
+fprintf("Mean error: %.4f\n", mean(history("error")));
 
 %% plot train results
 
