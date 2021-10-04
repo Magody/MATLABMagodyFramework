@@ -61,7 +61,6 @@ classdef Dense < Layer
             % input = X => each col is an example
             self.input = input;
             output = self.weights * self.input + self.bias;
-            
             self.t = self.t + 1;
             
         end

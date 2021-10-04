@@ -41,7 +41,7 @@ classdef QNeuralNetwork < QLearning
             
             self.shape_output = sequential_network.network{end}.shape_output;
              
-            self.actions_length = self.shape_output;
+            self.actions_length = prod(self.shape_output);
             self.initGameReplay(self.actions_length);
             
             self.sequential_conv_network = sequential_conv_network;
@@ -67,7 +67,7 @@ classdef QNeuralNetwork < QLearning
         end
         
         function history = train(self, X, Y, episode, verbose_level) %#ok<INUSD>
-            
+            context = containers.Map({'is_test'}, {false});
             % is trained as multiclass classification
             
             size_X = size(X);
@@ -97,7 +97,7 @@ classdef QNeuralNetwork < QLearning
                     end
                     y = Y(batch_range, :);
                     
-                    output = self.forwardFull(x);
+                    output = self.forwardFull(x, context);
                     
                     % error
                     error = error + sum(sum(self.nnConfig.functionLossCost(y', output), 1), 2)/self.nnConfig.batch_size;
@@ -129,30 +129,33 @@ classdef QNeuralNetwork < QLearning
             history('history_errors') = history_errors;
         end
         
-        function output = forwardFull(self, x)
+        function output = forwardFull(self, x, context)
             features = x;
             
             if self.use_convolutional
-                features = self.sequential_conv_network.forward(x);
+                features = self.sequential_conv_network.forward(x, context);
             end
 
-            output = self.sequential_network.forward(features);
+            output = self.sequential_network.forward(features, context);
                      
         end
         
         
         function y_pred = predict(self, X)
-            y_pred = self.forwardFull(X);
+            context = containers.Map({'is_test'}, {true});
+            y_pred = self.forwardFull(X, context);
         end
         
         function [max_q, action_index] = selectAction(self, state, is_test)
-            
-            Qval = self.forwardFull(state)'; 
+            context = containers.Map({'is_test'}, {is_test});
+            Qval = self.forwardFull(state, context)'; 
             [max_q, action_index] = QLearning.selectActionQEpsilonGreedy(Qval, self.epsilon, self.shape_output, is_test);
             
         end
         
         function history_learning = learnFromExperienceReplay(self, episode, verbose_level)
+            
+            context = containers.Map({'is_test'}, {false});
             
             history_learning = containers.Map();
             history_learning('learned') = false;
@@ -175,23 +178,28 @@ classdef QNeuralNetwork < QLearning
             [~, idx] = sort(rand(length(valid_replay), 1));
             randIdx = idx(1:self.nnConfig.batch_size);
             
-            dataX = zeros([self.shape_input, self.nnConfig.batch_size]);
+            input_dataX = self.shape_input;
+            if input_dataX(1, 2) == 1
+                input_dataX = self.shape_input(1);
+            end
+            
+            dataX = zeros([input_dataX, self.nnConfig.batch_size]);
             dataY = zeros(self.nnConfig.batch_size, self.actions_length);
             
-            input_dim = length(self.shape_input);
+            input_dim = length(input_dataX);
 
             % Computations for the minibatch
             for numExample=1:self.nnConfig.batch_size
 
                 % Getting the value of Q(s, a)
                 s = valid_replay{randIdx(numExample)}.state;
-                s_Qval = self.forwardFull(s);
+                s_Qval = self.forwardFull(s, context);
                 
                 % Getting the value of max_a_Q(s',a')
                 s_prime = valid_replay{randIdx(numExample)}.new_state;
                 
-                features = self.sequential_conv_network_target.forward(s_prime);
-                s_prime_Qval = self.sequential_network_target.forward(features);
+                features = self.sequential_conv_network_target.forward(s_prime, context);
+                s_prime_Qval = self.sequential_network_target.forward(features, context);
                 maxQval_er = max(s_prime_Qval);
                 
                 % selected action and reward
@@ -221,8 +229,12 @@ classdef QNeuralNetwork < QLearning
                 
             end
             
+            try
+                history = self.train(dataX, dataY, episode, verbose_level-1);
+            catch ME
+                disp(ME);
+            end
             
-            history = self.train(dataX, dataY, episode, verbose_level-1);
             
             history_learning('mean_cost') = mean(history('history_errors'));
             
