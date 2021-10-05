@@ -229,11 +229,8 @@ classdef QNeuralNetwork < QLearning
                 
             end
             
-            try
-                history = self.train(dataX, dataY, episode, verbose_level-1);
-            catch ME
-                disp(ME);
-            end
+            history = self.train(dataX, dataY, episode, verbose_level-1);
+            
             
             
             history_learning('mean_cost') = mean(history('history_errors'));

@@ -1,8 +1,6 @@
 clc;
 clear all;
 close all;
-addpath("models_genetic_algorithm");
-addpath("utils/math");
 
 verbose_level = 2;
 

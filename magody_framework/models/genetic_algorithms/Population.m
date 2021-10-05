@@ -1,7 +1,7 @@
 classdef Population < handle
     
     properties(Constant)
-        THRESHOLD_FITNESS = 95;
+        THRESHOLD_FITNESS = 180;
     end
     
     properties
@@ -43,35 +43,37 @@ classdef Population < handle
             
             for i=1:this.max_population
                 
-                if verbose_level >= 1
+                if verbose_level >= 1 && mod(i,ceil(this.max_population/2)) == 0
                     fprintf("Individual %d of %d. Gens:\n", i, this.max_population);
                     disp(this.chromosomes(i).gens);
                 end
-                params.learningRate = this.chromosomes(i).gens(1);
-                params.neurons_hidden1 = ceil(this.chromosomes(i).gens(2));
-                params.neurons_hidden2 = ceil(this.chromosomes(i).gens(3));
-                params.miniBatchSize = ceil(this.chromosomes(i).gens(4));
-                window_size = ceil(this.chromosomes(i).gens(5));
-                stride = ceil(this.chromosomes(i).gens(6));
-                params.reserved_space_for_gesture = ceil(this.chromosomes(i).gens(7));
-                params.epsilon = this.chromosomes(i).gens(8);
-                % not implemented or not relevant to optimize
-                params.lambda = 0;
-                params.gamma = 1;
-                params.initialMomentum = 0.3;
-                params.momentum = 0.9;
-                params.numEpochsToIncreaseMomentum = 50;
-                params.typeWorld = 'randWorld';
-                params.W = 25;
-                params.rewardType = 1;
                 
-                [training_accuracy, test_accuracy, ~] = QNN_emg_Exp_Replay(..., 
-                params, window_size, stride, "genetic_individual", -1, 87, 13);
+                
+                
+                params.interval_for_learning = ceil(this.chromosomes(i).gens(1));
+                params.epochs_nn = ceil(this.chromosomes(i).gens(2));
+                params.learning_rate = this.chromosomes(i).gens(3);
+                params.gamma = this.chromosomes(i).gens(4);
+                params.hidden1_neurons = ceil(this.chromosomes(i).gens(5));
+                params.hidden2_neurons = ceil(this.chromosomes(i).gens(6));
+                params.dropout_rate1 = this.chromosomes(i).gens(7);
+                params.dropout_rate2 = this.chromosomes(i).gens(8);
+                params.batch_size = ceil(this.chromosomes(i).gens(9));
+                params.decay_rate_alpha = this.chromosomes(i).gens(10);
+                params.experience_replay_reserved_space = ceil(this.chromosomes(i).gens(11));
+                
+                
+    
+    
+                
+                path_to_data = 'C:\Users\Magody\Documents\GitHub\TesisEMG\Data\preprocessing\';
+                [accuracy_train, accuracy_test] = qnnModelFeature(params, path_to_data, verbose_level-1);
                 
                 % ponderation of the accuracys
-                % penalization = abs(training_accuracy - test_accuracy); % penalizate overfitting 
+                % penalization = abs(training_accuracy - test_accuracy); %
+                % penalizate overfitting en RL no funciona por epsilon
                 penalization = 0;
-                fitness(i) = (training_accuracy+test_accuracy)/2 - penalization;
+                fitness(i) = accuracy_train + accuracy_test - penalization;
             end
         end
         
