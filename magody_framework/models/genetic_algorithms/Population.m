@@ -66,14 +66,18 @@ classdef Population < handle
     
     
                 
-                path_to_data = 'C:\Users\Magody\Documents\GitHub\TesisEMG\Data\preprocessing\';
+                path_to_data = '/home/magody/programming/MATLAB/tesis/Data/preprocessing/'; % 'C:\Users\Magody\Documents\GitHub\TesisEMG\Data\preprocessing\';
                 [accuracy_train, accuracy_test] = qnnModelFeature(params, path_to_data, verbose_level-1);
+                
+                if verbose_level >= 1
+                    fprintf("Acc test:%.2f-", accuracy_test);
+                end
                 
                 % ponderation of the accuracys
                 % penalization = abs(training_accuracy - test_accuracy); %
                 % penalizate overfitting en RL no funciona por epsilon
                 penalization = 0;
-                fitness(i) = accuracy_train + accuracy_test - penalization;
+                fitness(i) = accuracy_test - penalization;
             end
         end
         

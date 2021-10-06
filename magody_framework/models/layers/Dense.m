@@ -54,7 +54,8 @@ classdef Dense < Layer
             shape_output = self.shape_output;
             
             self.weights = getWeights(self.init_mean, self.init_std, [shape_output(1), shape_input(1)], shape_input(1), self.mode);
-            self.bias = zeros([shape_output(1), 1]);
+            % self.bias = zeros([shape_output(1), 1]);
+            self.bias = getWeights(self.init_mean, self.init_std, [shape_output(1), 1], shape_input(1), self.mode);
         end
         
         function output = forward(self, input, context)
