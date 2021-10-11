@@ -1,7 +1,7 @@
 classdef Population < handle
     
     properties(Constant)
-        THRESHOLD_FITNESS = 180;
+        THRESHOLD_FITNESS = 95;
     end
     
     properties
@@ -70,7 +70,7 @@ classdef Population < handle
                 [accuracy_train, accuracy_test] = qnnModelFeature(params, path_to_data, verbose_level-1);
                 
                 if verbose_level >= 1
-                    fprintf("Acc test:%.2f-", accuracy_test);
+                    % fprintf("Acc test:%.2f-", accuracy_test);
                 end
                 
                 % ponderation of the accuracys

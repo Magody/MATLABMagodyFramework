@@ -12,4 +12,9 @@
 - parametrizar los valores de Adam
 - epsilon and alpha decay should decay by inner epoch or episode? Move and parametice according to.
 - implement ResNet residual blocks
-
+- CNN: el backward usaba un mean de los usuarios, eso se hace correctamente?
+- CNN: el gradiente está equivocado por un poco y la actualización de los mesos no considera el promedio
+- controlar la property "t" de Dense y otras layers, está creciendo mucho.
+- la softmax es una capa de activación y la función de pérdida espera logits en lugar de una activación
+- check numerical gradient with true gradient obtained
+- implement computational graph: ver el grafo computacional en https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html, usando el grafo computacional almacena varias cosas que aceleran un monton el procesamiento para no recalcular dos veces

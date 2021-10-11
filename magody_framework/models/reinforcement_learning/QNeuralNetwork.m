@@ -21,6 +21,9 @@ classdef QNeuralNetwork < QLearning
         % alpha decay
         alpha;
         
+        % episode
+        episode = 0;
+        
         % aux
         use_convolutional;
         actions_length;
@@ -31,7 +34,26 @@ classdef QNeuralNetwork < QLearning
             
             self = self@QLearning(qLearningConfig, functionExecuteEpisode);
             
-            self.use_convolutional = ~isempty(sequential_conv_network.network);
+            % Config parameters
+            % NN and QNN config
+            self.nnConfig = nnConfig;
+            self.qLearningConfig = qLearningConfig;
+            % decay epsilon/alpha
+            self.epsilon = self.qLearningConfig.initial_epsilon;
+            self.alpha = self.nnConfig.learning_rate;
+            
+            
+            self.initNetwork(sequential_conv_network, sequential_network);
+            self.initGameReplay(self.actions_length);
+            
+            
+            
+            
+        end
+        
+        function initNetwork(self, sequential_conv_network, sequential_network)
+           % used for begining or transfer learning
+           self.use_convolutional = ~isempty(sequential_conv_network.network);
     
             if self.use_convolutional
                 self.shape_input = sequential_conv_network.network{1}.shape_input;
@@ -42,7 +64,6 @@ classdef QNeuralNetwork < QLearning
             self.shape_output = sequential_network.network{end}.shape_output;
              
             self.actions_length = prod(self.shape_output);
-            self.initGameReplay(self.actions_length);
             
             self.sequential_conv_network = sequential_conv_network;
             self.sequential_network = sequential_network;
@@ -50,14 +71,7 @@ classdef QNeuralNetwork < QLearning
             % theta freeze
             self.sequential_conv_network_target = sequential_conv_network; 
             self.sequential_network_target = sequential_network; 
-            % NN and QNN config
-            self.nnConfig = nnConfig;
-            self.qLearningConfig = qLearningConfig;
-            % decay epsilon/alpha
-            self.epsilon = self.qLearningConfig.initial_epsilon;
-            self.alpha = self.nnConfig.learning_rate;
-            
-            
+                        
         end
         
         function updateQNeuralNetworkTarget(self)
@@ -66,7 +80,7 @@ classdef QNeuralNetwork < QLearning
             self.sequential_network_target.network = self.sequential_network.network; 
         end
         
-        function history = train(self, X, Y, episode, verbose_level) %#ok<INUSD>
+        function history = train(self, X, Y, t, verbose_level) %#ok<INUSD>
             context = containers.Map({'is_test'}, {false});
             % is trained as multiclass classification
             
@@ -120,10 +134,10 @@ classdef QNeuralNetwork < QLearning
             end
             
             % epsilon decay
-            self.updateEpsilonDecay(1, episode);
+            self.updateEpsilonDecay(1);
 
             % alpha decay
-            self.alpha = self.nnConfig.learning_rate/(1 + self.nnConfig.decay_rate_alpha * episode);
+            self.alpha = self.nnConfig.learning_rate/(1 + self.nnConfig.decay_rate_alpha * t);
                 
 
             history('history_errors') = history_errors;
@@ -153,7 +167,7 @@ classdef QNeuralNetwork < QLearning
             
         end
         
-        function history_learning = learnFromExperienceReplay(self, episode, verbose_level)
+        function history_learning = learnFromExperienceReplay(self, t, verbose_level)
             
             context = containers.Map({'is_test'}, {false});
             
@@ -229,7 +243,7 @@ classdef QNeuralNetwork < QLearning
                 
             end
             
-            history = self.train(dataX, dataY, episode, verbose_level-1);
+            history = self.train(dataX, dataY, t, verbose_level-1);
             
             
             history_errors = history('history_errors');

@@ -33,7 +33,11 @@ classdef QLearning < handle
         function initGameReplay(self, actions_length)
             self.index_action = zeros([1, actions_length]);
             self.gameReplay = cell([1, self.qLearningConfig.experience_replay_reserved_space * actions_length]);
- 
+        end
+        
+        function transferGameReplay(self, gameReplay)
+            gameReplayLength = length(gameReplay);
+            self.gameReplay(1:gameReplayLength) = gameReplay(1:gameReplayLength);
         end
         
         function setCustomRunEpisodes(self, functionCustomRunEpisodes)
@@ -116,10 +120,10 @@ classdef QLearning < handle
             self.gameReplay{1, index_replay} = struct('state', state, 'action', action, 'reward', reward, 'new_state', new_state, 'is_terminal', is_terminal);   %[state(:)', action, reward, new_state(:)'];
         end
         
-        function updateEpsilonDecay(self, mode, episode)
+        function updateEpsilonDecay(self, mode)
             % mode=1 -> interpolate between initial_epsilon and 0.01
             if mode == 1
-                self.epsilon = max(0.01, self.qLearningConfig.initial_epsilon * log(exp(1) - ((exp(1) - 1) * (episode/self.qLearningConfig.total_episodes))));
+                self.epsilon = max(0.01, self.qLearningConfig.initial_epsilon * log(exp(1) - ((exp(1) - 1) * (self.episode/self.qLearningConfig.total_episodes))));
             end
         end
         
