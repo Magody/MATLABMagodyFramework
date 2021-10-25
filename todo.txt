@@ -18,3 +18,9 @@
 - la softmax es una capa de activación y la función de pérdida espera logits en lugar de una activación
 - check numerical gradient with true gradient obtained
 - implement computational graph: ver el grafo computacional en https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html, usando el grafo computacional almacena varias cosas que aceleran un monton el procesamiento para no recalcular dos veces
+- Implement Random search: first for two params and then expand after few iterations based on it.
+- Implement parameters optimization with Genetic algorithms and Bayesian.
+- Implement "divide by 10 when error plateus" and document. Everything document.
+- Inverse reinforcement learning.
+- Imitation learning.
+- Add regularization

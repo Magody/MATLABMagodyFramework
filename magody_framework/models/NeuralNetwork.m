@@ -20,15 +20,16 @@ classdef NeuralNetwork < handle
     
         end
         
-        function history = train(self, X, Y, verbose_level)
+        function history = train(self, X_train, y_train, X_validation, y_validation, verbose_level)
             
             context = containers.Map({'is_test'}, {false});
             
             history = containers.Map();
 
             history_errors = zeros([1, self.nnConfig.epochs]);
+            history_accuracy_validation = zeros([1, self.nnConfig.epochs]);
             
-            shape_input = size(X);
+            shape_input = size(X_train);
             num_dims = length(shape_input);
             
             is_two_dimensional = num_dims == 2;
@@ -50,11 +51,11 @@ classdef NeuralNetwork < handle
                     
                     % parametization for other integrations
                     if is_two_dimensional
-                        x = X(:, batch_range);
+                        x = X_train(:, batch_range);
                     else
-                        x = X(:, :, :, batch_range);
+                        x = X_train(:, :, :, batch_range);
                     end
-                    y = Y(batch_range, :);
+                    y = y_train(batch_range, :);
                     
                     output = self.forwardFull(x, context);
                     
@@ -66,6 +67,14 @@ classdef NeuralNetwork < handle
 
                 end
                 
+                if ~isempty(X_validation)
+                    raw_y_validation = self.predict(X_validation);
+                    [~, idx_pred] = max(raw_y_validation);
+                    [~, idx_real] = max(transpose(y_validation));
+
+                    accuracy = sum(idx_pred == idx_real)/length(idx_pred);
+                    history_accuracy_validation(1, e) = accuracy;
+                end                
                 self.alpha = self.nnConfig.learning_rate/(1 + self.nnConfig.decay_rate_alpha * e);
 
                 error = error / num_batchs;
@@ -77,11 +86,15 @@ classdef NeuralNetwork < handle
                 history_errors(1, e) = error;
 
                 if mod(e, floor(self.nnConfig.epochs/10)) == 0 && verbose_level > 0
-                    fprintf("%d/%d, error=%.4f\n", e, self.nnConfig.epochs, error);
+                    fprintf("%d/%d, error=%.4f, val_acc=%.4f\n", e, ...
+                        self.nnConfig.epochs, error, accuracy);
                 end
             end
 
-            history('error') = history_errors;
+            history('history_errors') = history_errors;
+            history('history_accuracy_validation') = history_accuracy_validation;
+            
+            
         end
         
     end

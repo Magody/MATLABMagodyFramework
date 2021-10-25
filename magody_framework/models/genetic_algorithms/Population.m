@@ -1,7 +1,7 @@
 classdef Population < handle
     
     properties(Constant)
-        THRESHOLD_FITNESS = 95;
+        THRESHOLD_FITNESS = 0.95*3;
     end
     
     properties
@@ -39,45 +39,40 @@ classdef Population < handle
         function fitness = fitness_function(this, verbose_level)
             % target is the unicode target for this specific string problem
             
+            path_root = "/home/magody/programming/MATLAB/tesis/";
+            path_to_framework = "/home/magody/programming/MATLAB/deep_learning_from_scratch/magody_framework";
+            
             fitness = zeros(1, this.max_population);
             
             for i=1:this.max_population
                 
-                if verbose_level >= 1 && mod(i,ceil(this.max_population/2)) == 0
-                    fprintf("Individual %d of %d. Gens:\n", i, this.max_population);
-                    disp(this.chromosomes(i).gens);
-                end
+                fprintf("Individual %d of %d. Gens:\n", i, this.max_population);
+                disp(this.chromosomes(i).gens);
                 
                 
                 
                 params.interval_for_learning = ceil(this.chromosomes(i).gens(1));
-                params.epochs_nn = ceil(this.chromosomes(i).gens(2));
-                params.learning_rate = this.chromosomes(i).gens(3);
-                params.gamma = this.chromosomes(i).gens(4);
-                params.hidden1_neurons = ceil(this.chromosomes(i).gens(5));
-                params.hidden2_neurons = ceil(this.chromosomes(i).gens(6));
-                params.dropout_rate1 = this.chromosomes(i).gens(7);
-                params.dropout_rate2 = this.chromosomes(i).gens(8);
-                params.batch_size = ceil(this.chromosomes(i).gens(9));
-                params.decay_rate_alpha = this.chromosomes(i).gens(10);
-                params.experience_replay_reserved_space = ceil(this.chromosomes(i).gens(11));
+                params.learning_rate = this.chromosomes(i).gens(2);
+                params.gamma = this.chromosomes(i).gens(3);
+                params.hidden1_neurons = ceil(this.chromosomes(i).gens(4));
+                params.hidden2_neurons = ceil(this.chromosomes(i).gens(5));
+                params.dropout_rate1 = this.chromosomes(i).gens(6);
                 
                 
     
     
                 
                 path_to_data = '/home/magody/programming/MATLAB/tesis/Data/preprocessing/'; % 'C:\Users\Magody\Documents\GitHub\TesisEMG\Data\preprocessing\';
-                [accuracy_train, accuracy_test] = qnnModelFeature(params, path_to_data, verbose_level-1);
+                [accuracy_classification_window, accuracy_classification, accuracy_recognition] = ...
+                    qnnModelFeature(params, path_to_data, path_root, path_to_framework, verbose_level-1);
                 
-                if verbose_level >= 1
-                    % fprintf("Acc test:%.2f-", accuracy_test);
-                end
+                score = accuracy_classification_window + accuracy_classification + accuracy_recognition;
                 
                 % ponderation of the accuracys
                 % penalization = abs(training_accuracy - test_accuracy); %
                 % penalizate overfitting en RL no funciona por epsilon
                 penalization = 0;
-                fitness(i) = accuracy_test - penalization;
+                fitness(i) = score - penalization;
             end
         end
         
@@ -99,10 +94,10 @@ classdef Population < handle
                     minimum_valid_number = this.gens_set(random_gen, 1);
                     maximum_valid_number = this.gens_set(random_gen, end);
                     
-                    change = mean([minimum_valid_number maximum_valid_number])/(reductor_factor * 2); 
+                    change = mean([minimum_valid_number maximum_valid_number])/(reductor_factor * 3); 
                     random_value = change * poles(randi([1 2]));
                     
-                    register_change{random_gen} = [register_change{random_gen} change];  % change is absolute positive
+                    register_change{random_gen} = [register_change{random_gen} random_value];  % change is absolute positive
                     
                     
                     offspring_mutated(individual).gens(random_gen) = ...
