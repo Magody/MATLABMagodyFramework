@@ -11,6 +11,7 @@ classdef Activation < Layer
         
         shape_input;
         shape_output;
+        name = "Activation";
     end
     
     methods

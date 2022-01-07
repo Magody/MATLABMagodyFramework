@@ -5,6 +5,7 @@ EPN - 2021
 classdef (Abstract) Layer < handle
     
     properties (Abstract)
+        name;
         shape_input;
         shape_output; 
     end

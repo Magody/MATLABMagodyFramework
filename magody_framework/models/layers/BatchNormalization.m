@@ -5,6 +5,7 @@ EPN - 2021
 classdef BatchNormalization < Layer
     
     properties
+        name = "BatchNormalization";
         
         shape_input;
         shape_output;

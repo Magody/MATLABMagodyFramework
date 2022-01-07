@@ -5,6 +5,7 @@ EPN - 2021
 classdef Pooling < Layer
     
     properties
+        name = "Pooling";
         input;
         shape_input;
         shape_output;

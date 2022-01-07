@@ -5,6 +5,7 @@ EPN - 2021
 classdef Reshape < Layer
     
     properties
+        name = "Reshape";
         shape_input;
         shape_output = [];
     end

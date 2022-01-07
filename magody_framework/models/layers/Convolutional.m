@@ -6,6 +6,8 @@ classdef Convolutional < Layer
     
     properties
         
+        name = "Convolutional";
+
         % init weights
         init_mean = 0;
         init_std = 1;

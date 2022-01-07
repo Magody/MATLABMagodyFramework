@@ -5,6 +5,8 @@ EPN - 2021
 classdef Dense < Layer
     
     properties
+        name = "Dense";
+
         input;
         weights;
         bias;

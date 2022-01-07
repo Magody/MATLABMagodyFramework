@@ -5,6 +5,7 @@ EPN - 2021
 classdef Dropout < Layer
     
     properties
+        name = "Dropout";
         
         shape_input;
         shape_output;

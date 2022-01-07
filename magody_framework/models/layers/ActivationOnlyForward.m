@@ -10,6 +10,7 @@ classdef ActivationOnlyForward < Layer
         
         shape_input;
         shape_output;
+        name = "ActivationOnlyForward";
     end
     
     methods
